@@ -30,12 +30,14 @@ $'  .-----.\n  [- _ -]\n  /|━━━|\\\n   o   o'
 $'  .-----.\n  [O   O]\n  /|━O━|\\\n   o   o'
 $'  .-----.\n  [O   O]\n  /|━━━|\\\n   ~   ~'
 $'  .-----.\n  [O   O]\n   |━━━|\n   \'   \''
+$'  .-----.    🌙\n  [- O -]==o\n  /|━━━|\\\n   o   o'
+$'  .-----.  · 🌙\n  [- - -]==o\n  /|━━━|\\\n   o   o'
 )
 
 # Pick new state when current expires
 if (( _robot_t >= _robot_dur )); then
   # Slot machine intentionally excluded — only triggered by Space (easter egg)
-  local -a states=(walk walk static blink wave sleep surprise smile dance jump)
+  local -a states=(walk walk static blink wave sleep surprise smile dance jump moon)
   [[ $_robot_state == slot ]] && states=(walk)
   _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   _robot_t=0
@@ -55,6 +57,7 @@ case $_robot_state in
   sleep)    color=63  ;;  # blue
   dance)    color=${rainbow[$((_robot_t % ${#rainbow} + 1))]} ;;
   jump)     color=${rainbow[$((_robot_t % ${#rainbow} + 1))]} ;;
+  moon)     color=75  ;;  # pale blue
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -72,6 +75,7 @@ case $_robot_state in
   sleep)    raw=${idle_frames[7]} ;;
   dance)    raw=${idle_frames[$((_robot_t % 2 == 0 ? 6 : 2))]} ;;
   jump)     raw=${idle_frames[$((_robot_t % 2 == 0 ? 9 : 10))]} ;;
+  moon)     raw=${idle_frames[$((_robot_t % 6 < 5 ? 11 : 12))]} ;;
   slot)
     # Reel symbols. 7️⃣ keycap is the jackpot — width matches the other 2-col
     # emojis in modern terminals.
