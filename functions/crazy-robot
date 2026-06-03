@@ -77,6 +77,10 @@ $'         .-----.\n         [o   o]\n        o━|━━━|\\\n      🌱  o  
 $'         .-----.\n         [o   o]\n       ·o━|━━━|\\\n      🌿  o   o'
 $'         .-----.\n         [o   o]\n        o━|━━━|\\\n      🌿  o   o'
 $'         .-----.\n         [^   ^]\n         /|━━━|\\\n      🌻  o   o'
+$'  .-----.  🎈\n  [o   o] /\n  /|━━━|━o\n   o   o'
+$'  .-----.  🎈\n  [O   O] /\n  /|━━━|━o\n   \'   \''
+$'     🎈  .-----.\n       \\ [o   o]\n        o━|━━━|\\\n          o   o'
+$'     🎈  .-----.\n       \\ [O   O]\n        o━|━━━|\\\n          \'   \''
 )
 
 # Pick new state when current expires
@@ -86,7 +90,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -97,6 +101,7 @@ if (( _robot_t >= _robot_dur )); then
   case $_robot_state in
     moon)                   _w=20 ;;
     basketball)             _w=18 ;;
+    balloon)                _w=16 ;;
     fishing)                _w=16 ;;
     campfire|coffee|garden) _w=13 ;;
   esac
@@ -120,6 +125,7 @@ if (( _robot_t >= _robot_dur )); then
     fishing)           _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 catch loops
     coffee)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 sip loops
     garden)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 grow loops
+    balloon)           _robot_dur=999 ;; # ends dynamically when balloon leaves screen
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -144,6 +150,7 @@ case $_robot_state in
   fishing)  color=39  ;;  # water blue
   coffee)   color=130 ;;  # coffee brown
   garden)   color=114 ;;  # leaf green
+  balloon)  color=219 ;;  # balloon pink
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -235,6 +242,48 @@ case $_robot_state in
       raw=${idle_frames[$(( _gb + _gp / 4 * 2 + _gp % 2 ))]}
     else
       raw=${idle_frames[$(( _gb + 4 ))]}
+    fi
+    ;;
+  balloon)
+    # hold 🎈 (2) → lift off, feet tucked (2) → let go: balloon drifts all
+    # the way across the terminal while the robot watches, then robot is sad.
+    # Mirrored variant holds left and the balloon drifts off to the left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    local _bb=$(( _robot_mirror ? 60 : 58 ))
+    if (( _robot_t < 4 )); then
+      raw=${idle_frames[$(( _bb + _robot_t / 2 ))]}
+    else
+      local _bd=$(( (_robot_t - 4) * 2 ))
+      local _gone=0 _brel _bsp="" _bi
+      if (( _robot_mirror )); then
+        _brel=$(( 3 - _bd ))
+        (( _robot_pos + _brel < 0 )) && _gone=1
+      else
+        _brel=$(( 13 + _bd ))
+        (( _robot_pos + _brel + 2 > track )) && _gone=1
+      fi
+      if (( _gone )); then
+        # sad — balloon flew away. Mirror keeps torso at its drift columns.
+        raw=${idle_frames[7]}
+        local _bnl=$'\n'
+        (( _robot_mirror )) && raw="       ${raw//${_bnl}/${_bnl}       }"
+        (( _robot_dur > _robot_t + 3 )) && _robot_dur=$(( _robot_t + 3 ))
+      elif (( _robot_mirror )); then
+        # Build the frame in absolute columns (pad shadowed to 0) so the
+        # balloon can keep flying left past the robot's own left edge.
+        local _babs=$(( _robot_pos + _brel ))
+        local _bpad=$(( _robot_pos + 7 ))
+        for ((_bi=0; _bi<_babs; _bi++)); do _bsp+=" "; done
+        local _bgap=""
+        for ((_bi=_babs+2; _bi<_bpad; _bi++)); do _bgap+=" "; done
+        local _brow=""
+        for ((_bi=0; _bi<_bpad+2; _bi++)); do _brow+=" "; done
+        raw="${_bsp}🎈${_bgap}o/.-----."$'\n'"${_brow}[O   O]"$'\n'"${_brow} |━━━|"$'\n'"${_brow} o   o"
+        local _robot_pos=0
+      else
+        for ((_bi=0; _bi<_brel-11; _bi++)); do _bsp+=" "; done
+        raw='  .-----.\o'"${_bsp}🎈"$'\n'"  [O   O]"$'\n'"   |━━━|"$'\n'"   o   o"
+      fi
     fi
     ;;
   slot)
