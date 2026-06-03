@@ -67,6 +67,16 @@ $'         .-----.\n       ~ [-   -]\n       ☕━|━━━|\\\n          o   
 $'         .-----.\n      ~  [-   -]\n       ☕━|━━━|\\\n          o   o'
 $'         .-----.\n       ☕[-   -]\n         \\|━━━|\\\n          o   o'
 $'         .-----.\n         [O   O]\n       ☕━|━━━|\\\n          o   o'
+$'  .-----.\n  [o   o]\n  /|━━━|━o·\n   o   o  🌱'
+$'  .-----.\n  [o   o]\n  /|━━━|━o\n   o   o  🌱'
+$'  .-----.\n  [o   o]\n  /|━━━|━o·\n   o   o  🌿'
+$'  .-----.\n  [o   o]\n  /|━━━|━o\n   o   o  🌿'
+$'  .-----.\n  [^   ^]\n  /|━━━|\\\n   o   o  🌻'
+$'         .-----.\n         [o   o]\n       ·o━|━━━|\\\n      🌱  o   o'
+$'         .-----.\n         [o   o]\n        o━|━━━|\\\n      🌱  o   o'
+$'         .-----.\n         [o   o]\n       ·o━|━━━|\\\n      🌿  o   o'
+$'         .-----.\n         [o   o]\n        o━|━━━|\\\n      🌿  o   o'
+$'         .-----.\n         [^   ^]\n         /|━━━|\\\n      🌻  o   o'
 )
 
 # Pick new state when current expires
@@ -76,16 +86,21 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
   # Keep walk's final pos when switching to other states so the robot
   # stays put. Only clamp wide props (moon) since plain robot frames
   # already fit inside the walk track. catpeek picks its own pos per phase.
-  if [[ $_robot_state == moon || $_robot_state == basketball ]]; then
-    local _w=20
-    [[ $_robot_state == basketball ]] && _w=18
+  local _w=0
+  case $_robot_state in
+    moon)                   _w=20 ;;
+    basketball)             _w=18 ;;
+    fishing)                _w=16 ;;
+    campfire|coffee|garden) _w=13 ;;
+  esac
+  if (( _w )); then
     (( _robot_pos > track - _w )) && _robot_pos=$(( track - _w ))
     (( _robot_pos < 0 )) && _robot_pos=0
   fi
@@ -104,6 +119,7 @@ if (( _robot_t >= _robot_dur )); then
     campfire)          _robot_dur=$(( (4 + RANDOM % 4) * 3 )) ;; # 4-7 flicker loops
     fishing)           _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 catch loops
     coffee)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 sip loops
+    garden)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 grow loops
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -127,6 +143,7 @@ case $_robot_state in
   campfire) color=203 ;;  # warm red
   fishing)  color=39  ;;  # water blue
   coffee)   color=130 ;;  # coffee brown
+  garden)   color=114 ;;  # leaf green
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -206,6 +223,18 @@ case $_robot_state in
       raw=${idle_frames[$(( _cb + 2 ))]}
     else
       raw=${idle_frames[$(( _cb + 3 ))]}
+    fi
+    ;;
+  garden)
+    # 12-tick cycle: water 🌱 (4) → water 🌿 (4) → 🌻 blooms (4).
+    # Water drop · falls on alternate ticks. Mirrored variant plants left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    local _gb=$(( _robot_mirror ? 53 : 48 ))
+    local _gp=$(( _robot_t % 12 ))
+    if (( _gp < 8 )); then
+      raw=${idle_frames[$(( _gb + _gp / 4 * 2 + _gp % 2 ))]}
+    else
+      raw=${idle_frames[$(( _gb + 4 ))]}
     fi
     ;;
   slot)
