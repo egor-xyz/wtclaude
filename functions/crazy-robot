@@ -59,6 +59,14 @@ $'  .-----.  🐟\n  [^   ^]━━/✨\n  /|━━━|\n   o   o  ~~~~~'
 $'         .-----.\n         [o   o]\n      /━━━|━━━|\\\n   ~~o~~  o   o'
 $'         .-----.\n         [-   -]\n      /━━━|━━━|\\\n   ~~~~~  o   o'
 $'     🐟  .-----.\n    ✨\\━━[^   ^]\n          |━━━|\\\n   ~~~~~  o   o'
+$'  .-----.\n  [-   -] ~\n  /|━━━|━☕\n   o   o'
+$'  .-----.\n  [-   -]  ~\n  /|━━━|━☕\n   o   o'
+$'  .-----.\n  [-   -]☕\n  /|━━━|/\n   o   o'
+$'  .-----.\n  [O   O]\n  /|━━━|━☕\n   o   o'
+$'         .-----.\n       ~ [-   -]\n       ☕━|━━━|\\\n          o   o'
+$'         .-----.\n      ~  [-   -]\n       ☕━|━━━|\\\n          o   o'
+$'         .-----.\n       ☕[-   -]\n         \\|━━━|\\\n          o   o'
+$'         .-----.\n         [O   O]\n       ☕━|━━━|\\\n          o   o'
 )
 
 # Pick new state when current expires
@@ -68,7 +76,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -95,6 +103,7 @@ if (( _robot_t >= _robot_dur )); then
     basketball)        _robot_dur=$(( (2 + RANDOM % 3) * 6 )) ;; # 2-4 shot loops
     campfire)          _robot_dur=$(( (4 + RANDOM % 4) * 3 )) ;; # 4-7 flicker loops
     fishing)           _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 catch loops
+    coffee)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 sip loops
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -117,6 +126,7 @@ case $_robot_state in
   basketball) color=214 ;;  # amber
   campfire) color=203 ;;  # warm red
   fishing)  color=39  ;;  # water blue
+  coffee)   color=130 ;;  # coffee brown
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -182,6 +192,20 @@ case $_robot_state in
       raw=${idle_frames[$(( _fb + 2 ))]}
     else
       raw=${idle_frames[$(( _fb + _fp % 2 ))]}
+    fi
+    ;;
+  coffee)
+    # 12-tick cycle: sleepy + slow steam drift (6) → long sip (3) → awake O O (3).
+    # Mirrored variant holds the cup in the left hand.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    local _cb=$(( _robot_mirror ? 44 : 40 ))
+    local _cp=$(( _robot_t % 12 ))
+    if (( _cp < 6 )); then
+      raw=${idle_frames[$(( _cb + _cp / 3 ))]}
+    elif (( _cp < 9 )); then
+      raw=${idle_frames[$(( _cb + 2 ))]}
+    else
+      raw=${idle_frames[$(( _cb + 3 ))]}
     fi
     ;;
   slot)
