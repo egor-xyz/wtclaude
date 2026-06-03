@@ -47,6 +47,12 @@ $'  .-----.\n  [-   -]\n  /|━━━|━━o\n   o   o  ✨'
 $'  .-----.\n  [o   o]\no━━|━━━|\\\n🔥 o   o'
 $'  .-----.\n· [o   o]\no━━|━━━|\\\n💥 o   o'
 $'  .-----.\n  [-   -]\no━━|━━━|\\\n✨ o   o'
+$'         .-----.\n|_|--  🏀[⌐   ⌐]\n |       ━|━━━|\\\n |        o   o'
+$'     🏀  .-----.\n|_|--    [⌐   ⌐]\n |       ━|━━━|\\\n |        o   o'
+$'   🏀    .-----.\n|_|--    [⌐   ⌐]\n |       /|━━━|\\\n |        o   o'
+$'         .-----.\n|_|🏀    [⌐   ⌐]\n |       /|━━━|\\\n |        o   o'
+$'         .-----.\n|_|--    [^   ^]\n |🏀     /|━━━|\\\n |        o   o'
+$'         .-----.\n|_|--  ✨[^   ^]\n |       /|━━━|\\\n |🏀      o   o'
 )
 
 # Pick new state when current expires
@@ -147,8 +153,10 @@ case $_robot_state in
     esac
     ;;
   basketball)
-    # 6-tick cycle: aim → release → arc → rim → swish → bounce+✨
-    raw=${idle_frames[$(( 16 + _robot_t % 6 ))]}
+    # 6-tick cycle: aim → release → arc → rim → swish → bounce+✨.
+    # Mirrored variant puts the hoop on the robot's left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    raw=${idle_frames[$(( (_robot_mirror ? 28 : 16) + _robot_t % 6 ))]}
     ;;
   campfire)
     # 3-tick flicker: 🔥 flare → 💥 burst → ✨ embers (+ cozy blink).
