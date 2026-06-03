@@ -89,6 +89,10 @@ $'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|    
 $'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|     |  ⚽   \\   o'
 $'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|  ⚽ |       o   o'
 $'            \\.-----./\n______       [^   ^]\n|: : :|       |━━━|\n|  ⚽ |       o   o'
+$'      .-----.\n      [o   o]\n    🎤━|━━━|\\\n       o   o'
+$'      .-----.\n  🎵  [o   o]\n    🎤━|━━━|\\\n       o   o'
+$'🎵     .-----.\n  🎶  [^   ^]\n    🎤━|━━━|\\\n       o   o'
+$'🎶     .-----.\n  🎵  [^   ^]\n    🎤━|━━━|\\\n       o   o'
 )
 
 # Pick new state when current expires
@@ -98,7 +102,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon goal)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon goal concert)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -113,6 +117,7 @@ if (( _robot_t >= _robot_dur )); then
     balloon)                _w=16 ;;
     fishing)                _w=16 ;;
     campfire|coffee|garden) _w=13 ;;
+    concert)                _w=14 ;;
   esac
   if (( _w )); then
     (( _robot_pos > track - _w )) && _robot_pos=$(( track - _w ))
@@ -136,6 +141,7 @@ if (( _robot_t >= _robot_dur )); then
     garden)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 grow loops
     balloon)           _robot_dur=999 ;; # ends dynamically when balloon leaves screen
     goal)              _robot_dur=$(( (1 + RANDOM % 2) * 8 )) ;; # 1-2 kicks
+    concert)           _robot_dur=$(( (3 + RANDOM % 3) * 4 )) ;; # 3-5 riffs
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -162,6 +168,7 @@ case $_robot_state in
   garden)   color=114 ;;  # leaf green
   balloon)  color=219 ;;  # balloon pink
   goal)     color=82  ;;  # pitch green
+  concert)  color=135 ;;  # rock purple
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -310,6 +317,11 @@ case $_robot_state in
     else
       raw=${idle_frames[$(( _gob + 3 ))]}
     fi
+    ;;
+  concert)
+    # 4-tick riff: 🎤 in hand → 🎵 rises → 🎵🎶 float up and away.
+    # Always the left-side variant (mic in left hand, notes drift left).
+    raw=${idle_frames[$(( 70 + _robot_t % 4 ))]}
     ;;
   slot)
     # Reel symbols. 7️⃣ keycap is the jackpot — width matches the other 2-col
