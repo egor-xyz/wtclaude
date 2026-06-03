@@ -53,6 +53,12 @@ $'   🏀    .-----.\n|_|--    [⌐   ⌐]\n |       /|━━━|\\\n |        o
 $'         .-----.\n|_|🏀    [⌐   ⌐]\n |       /|━━━|\\\n |        o   o'
 $'         .-----.\n|_|--    [^   ^]\n |🏀     /|━━━|\\\n |        o   o'
 $'         .-----.\n|_|--  ✨[^   ^]\n |       /|━━━|\\\n |🏀      o   o'
+$'  .-----.\n  [o   o]\n  /|━━━|━━━\\\n   o   o  ~~o~~'
+$'  .-----.\n  [-   -]\n  /|━━━|━━━\\\n   o   o  ~~~~~'
+$'  .-----.  🐟\n  [^   ^]━━/✨\n  /|━━━|\n   o   o  ~~~~~'
+$'         .-----.\n         [o   o]\n      /━━━|━━━|\\\n   ~~o~~  o   o'
+$'         .-----.\n         [-   -]\n      /━━━|━━━|\\\n   ~~~~~  o   o'
+$'     🐟  .-----.\n    ✨\\━━[^   ^]\n          |━━━|\\\n   ~~~~~  o   o'
 )
 
 # Pick new state when current expires
@@ -62,7 +68,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -88,6 +94,7 @@ if (( _robot_t >= _robot_dur )); then
     catpeek)           _robot_dur=$(( (2 + RANDOM % 2) * 8 )) ;; # 2-3 peek loops
     basketball)        _robot_dur=$(( (2 + RANDOM % 3) * 6 )) ;; # 2-4 shot loops
     campfire)          _robot_dur=$(( (4 + RANDOM % 4) * 3 )) ;; # 4-7 flicker loops
+    fishing)           _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 catch loops
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -109,6 +116,7 @@ case $_robot_state in
   catpeek)  color=213 ;;  # pink
   basketball) color=214 ;;  # amber
   campfire) color=203 ;;  # warm red
+  fishing)  color=39  ;;  # water blue
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -163,6 +171,18 @@ case $_robot_state in
     # Mirrored variant puts the fire on the robot's left.
     (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
     raw=${idle_frames[$(( (_robot_mirror ? 25 : 22) + _robot_t % 3 ))]}
+    ;;
+  fishing)
+    # 12-tick cycle: bobber bobs (4 ticks) → 🐟 catch + ✨ (8 ticks).
+    # Mirrored variant fishes off the robot's left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    local _fb=$(( _robot_mirror ? 37 : 34 ))
+    local _fp=$(( _robot_t % 12 ))
+    if (( _fp >= 4 )); then
+      raw=${idle_frames[$(( _fb + 2 ))]}
+    else
+      raw=${idle_frames[$(( _fb + _fp % 2 ))]}
+    fi
     ;;
   slot)
     # Reel symbols. 7️⃣ keycap is the jackpot — width matches the other 2-col
