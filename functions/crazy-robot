@@ -81,6 +81,14 @@ $'  .-----.  🎈\n  [o   o] /\n  /|━━━|━o\n   o   o'
 $'  .-----.  🎈\n  [O   O] /\n  /|━━━|━o\n   \'   \''
 $'     🎈  .-----.\n       \\ [o   o]\n        o━|━━━|\\\n          o   o'
 $'     🎈  .-----.\n       \\ [O   O]\n        o━|━━━|\\\n          \'   \''
+$'  .-----.\n  [o   o]    ______\n  /|━━━|\\    |: : :|\n   o   o ⚽  |     |'
+$'  .-----.\n  [o   o]    ______\n  /|━━━|\\    |: : :|\n   o  /    ⚽|     |'
+$'  .-----.\n  [o   o]    ______\n  /|━━━|\\    |: : :|\n   o   o     | ⚽  |'
+$' \\.-----./\n  [^   ^]    ______\n   |━━━|     |: : :|\n   o   o     | ⚽  |'
+$'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|     |    ⚽ o   o'
+$'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|     |  ⚽   \\   o'
+$'             .-----.\n______       [o   o]\n|: : :|      /|━━━|\\\n|  ⚽ |       o   o'
+$'            \\.-----./\n______       [^   ^]\n|: : :|       |━━━|\n|  ⚽ |       o   o'
 )
 
 # Pick new state when current expires
@@ -90,7 +98,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon goal)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -101,6 +109,7 @@ if (( _robot_t >= _robot_dur )); then
   case $_robot_state in
     moon)                   _w=20 ;;
     basketball)             _w=18 ;;
+    goal)                   _w=21 ;;
     balloon)                _w=16 ;;
     fishing)                _w=16 ;;
     campfire|coffee|garden) _w=13 ;;
@@ -126,6 +135,7 @@ if (( _robot_t >= _robot_dur )); then
     coffee)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 sip loops
     garden)            _robot_dur=$(( (1 + RANDOM % 2) * 12 )) ;; # 1-2 grow loops
     balloon)           _robot_dur=999 ;; # ends dynamically when balloon leaves screen
+    goal)              _robot_dur=$(( (1 + RANDOM % 2) * 8 )) ;; # 1-2 kicks
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -151,6 +161,7 @@ case $_robot_state in
   coffee)   color=130 ;;  # coffee brown
   garden)   color=114 ;;  # leaf green
   balloon)  color=219 ;;  # balloon pink
+  goal)     color=82  ;;  # pitch green
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -284,6 +295,20 @@ case $_robot_state in
         for ((_bi=0; _bi<_brel-11; _bi++)); do _bsp+=" "; done
         raw='  .-----.\o'"${_bsp}🎈"$'\n'"  [O   O]"$'\n'"   |━━━|"$'\n'"   o   o"
       fi
+    fi
+    ;;
+  goal)
+    # 8-tick cycle: ball at feet (2) → kick → rolls → in the net, arms up (4).
+    # Mirrored variant kicks into a goal on the robot's left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    local _gob=$(( _robot_mirror ? 66 : 62 ))
+    local _gop=$(( _robot_t % 8 ))
+    if (( _gop <= 1 )); then
+      raw=${idle_frames[$_gob]}
+    elif (( _gop <= 3 )); then
+      raw=${idle_frames[$(( _gob + _gop - 1 ))]}
+    else
+      raw=${idle_frames[$(( _gob + 3 ))]}
     fi
     ;;
   slot)
