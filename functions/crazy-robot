@@ -93,6 +93,7 @@ $'      .-----.\n      [o   o]\n    🎤━|━━━|\\\n       o   o'
 $'      .-----.\n  🎵  [o   o]\n    🎤━|━━━|\\\n       o   o'
 $'🎵     .-----.\n  🎶  [^   ^]\n    🎤━|━━━|\\\n       o   o'
 $'🎶     .-----.\n  🎵  [^   ^]\n    🎤━|━━━|\\\n       o   o'
+$'        \\.-----./\n         [O   O]\n          |━━━|\n          o   o'
 )
 
 # Pick new state when current expires
@@ -102,7 +103,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon goal concert)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire fishing coffee garden balloon goal concert ufo)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -112,7 +113,7 @@ if (( _robot_t >= _robot_dur )); then
   local _w=0
   case $_robot_state in
     moon)                   _w=20 ;;
-    basketball)             _w=18 ;;
+    basketball|ufo)         _w=18 ;;
     goal)                   _w=21 ;;
     balloon)                _w=16 ;;
     fishing)                _w=16 ;;
@@ -142,6 +143,7 @@ if (( _robot_t >= _robot_dur )); then
     balloon)           _robot_dur=999 ;; # ends dynamically when balloon leaves screen
     goal)              _robot_dur=$(( (1 + RANDOM % 2) * 8 )) ;; # 1-2 kicks
     concert)           _robot_dur=$(( (3 + RANDOM % 3) * 4 )) ;; # 3-5 riffs
+    ufo)               _robot_dur=999 ;; # ends dynamically when 🛸 leaves screen
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -169,6 +171,7 @@ case $_robot_state in
   balloon)  color=219 ;;  # balloon pink
   goal)     color=82  ;;  # pitch green
   concert)  color=135 ;;  # rock purple
+  ufo)      color=51  ;;  # alien cyan
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -322,6 +325,55 @@ case $_robot_state in
     # 4-tick riff: 🎤 in hand → 🎵 rises → 🎵🎶 float up and away.
     # Always the left-side variant (mic in left hand, notes drift left).
     raw=${idle_frames[$(( 70 + _robot_t % 4 ))]}
+    ;;
+  ufo)
+    # Left-only scene: 🛸 flies in from the left edge while the 🐄 walks
+    # from the robot's side to meet it in the middle → beam → cow taken →
+    # 🛸 exits left across the screen, robot panics (arms waving), ends
+    # shocked for 3 ticks.
+    # Meeting point: middle of the gap between left edge and the cow's
+    # start next to the robot. Cow walks 1 col/tick to it; 🛸 eases in.
+    _wt_sp() { local _n=$1 _s="" _i; for ((_i=0; _i<_n; _i++)); do _s+=" "; done; print -rn -- "$_s"; }
+    local _um=$(( (_robot_pos + 6) / 2 ))
+    (( _um < 1 )) && _um=1
+    local _ua=$(( _robot_pos + 6 - _um ))
+    (( _ua < 1 )) && _ua=1
+    local _ut=$(( _robot_t - _ua ))
+    local _upr=$(_wt_sp $(( _robot_pos + 9 )))
+    local _body="${_upr}/|━━━|\\" _feet="${_upr} o   o"
+    if (( _ut < 0 )); then
+      # Approach: cow walks left, 🛸 flies right, both toward _um.
+      local _uabs=$(( _um * _robot_t / _ua ))
+      local _cabs=$(( _robot_pos + 6 - _robot_t ))
+      raw="$(_wt_sp $_uabs)🛸$(_wt_sp $(( _robot_pos + 7 - _uabs ))).-----."$'\n'"${_upr}[o   o]"$'\n'"${_body}"$'\n'"$(_wt_sp $_cabs)🐄$(_wt_sp $(( _robot_pos + 8 - _cabs )))o   o"
+    elif (( _ut == 0 )); then
+      # Met: 🛸 hovers right above the cow.
+      raw="$(_wt_sp $_um)🛸$(_wt_sp $(( _robot_pos + 7 - _um ))).-----."$'\n'"${_upr}[o   o]"$'\n'"${_body}"$'\n'"$(_wt_sp $_um)🐄$(_wt_sp $(( _robot_pos + 8 - _um )))o   o"
+    elif (( _ut == 1 )); then
+      # Beam on.
+      raw="$(_wt_sp $_um)🛸$(_wt_sp $(( _robot_pos + 7 - _um ))).-----."$'\n'"$(_wt_sp $(( _um - 1 )))\\  /$(_wt_sp $(( _robot_pos + 6 - _um )))[O   O]"$'\n'"${_body}"$'\n'"$(_wt_sp $_um)🐄$(_wt_sp $(( _robot_pos + 8 - _um )))o   o"
+    elif (( _ut == 2 )); then
+      # Cow halfway up.
+      raw="$(_wt_sp $_um)🛸$(_wt_sp $(( _robot_pos + 7 - _um ))).-----."$'\n'"$(_wt_sp $(( _um - 1 )))\\  /$(_wt_sp $(( _robot_pos + 6 - _um )))[O   O]"$'\n'"$(_wt_sp $_um)🐄$(_wt_sp $(( _robot_pos + 7 - _um )))/|━━━|\\"$'\n'"${_feet}"
+    elif (( _ut == 3 )); then
+      # Cow at the ship.
+      raw="$(_wt_sp $_um)🛸$(_wt_sp $(( _robot_pos + 7 - _um ))).-----."$'\n'"$(_wt_sp $_um)🐄$(_wt_sp $(( _robot_pos + 7 - _um )))[O   O]"$'\n'"${_body}"$'\n'"${_feet}"
+    else
+      # Exit: 🛸 flies left off the screen, robot waves arms up/down.
+      local _uabs=$(( _um - (_ut - 4) * 3 ))
+      if (( _uabs < 0 )); then
+        # Shocked hold — relative frame, keep normal pos padding.
+        raw=${idle_frames[74]}
+        local _ushock=1
+        (( _robot_dur > _robot_t + 3 )) && _robot_dur=$(( _robot_t + 3 ))
+      elif (( _robot_t % 2 )); then
+        raw="$(_wt_sp $_uabs)🛸$(_wt_sp $(( _robot_pos + 6 - _uabs )))\\.-----./"$'\n'"${_upr}[O   O]"$'\n'"${_upr} |━━━|"$'\n'"${_feet}"
+      else
+        raw="$(_wt_sp $_uabs)🛸$(_wt_sp $(( _robot_pos + 7 - _uabs ))).-----."$'\n'"${_upr}[O   O]"$'\n'"${_body}"$'\n'"${_feet}"
+      fi
+    fi
+    # All frames except the shocked hold are built in absolute columns.
+    (( ${_ushock:-0} )) || local _robot_pos=0
     ;;
   slot)
     # Reel symbols. 7️⃣ keycap is the jackpot — width matches the other 2-col
