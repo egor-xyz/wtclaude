@@ -41,6 +41,12 @@ $'  .-----.    🏀\n  [⌐   ⌐]    --|_|\n  /|━━━|\\       |\n   o   o 
 $'  .-----.\n  [⌐   ⌐]    🏀|_|\n  /|━━━|\\       |\n   o   o        |'
 $'  .-----.\n  [^   ^]    --|_|\n  /|━━━|\\     🏀|\n   o   o        |'
 $'  .-----.\n  [^   ^]✨  --|_|\n  /|━━━|\\       |\n   o   o      🏀|'
+$'  .-----.\n  [o   o]\n  /|━━━|━━o\n   o   o  🔥'
+$'  .-----.\n  [o   o]  ·\n  /|━━━|━━o\n   o   o  💥'
+$'  .-----.\n  [-   -]\n  /|━━━|━━o\n   o   o  ✨'
+$'  .-----.\n  [o   o]\no━━|━━━|\\\n🔥 o   o'
+$'  .-----.\n· [o   o]\no━━|━━━|\\\n💥 o   o'
+$'  .-----.\n  [-   -]\no━━|━━━|\\\n✨ o   o'
 )
 
 # Pick new state when current expires
@@ -50,7 +56,7 @@ if (( _robot_t >= _robot_dur )); then
   if [[ $_robot_state != walk ]]; then
     _robot_state=walk
   else
-    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball)
+    local -a states=(static blink wave sleep surprise smile dance jump moon catpeek basketball campfire)
     _robot_state=${states[$((RANDOM % ${#states} + 1))]}
   fi
   _robot_t=0
@@ -75,6 +81,7 @@ if (( _robot_t >= _robot_dur )); then
     moon)              _robot_dur=$(( (6 + RANDOM % 4) * 6 )) ;; # 6-9 blink cycles
     catpeek)           _robot_dur=$(( (2 + RANDOM % 2) * 8 )) ;; # 2-3 peek loops
     basketball)        _robot_dur=$(( (2 + RANDOM % 3) * 6 )) ;; # 2-4 shot loops
+    campfire)          _robot_dur=$(( (4 + RANDOM % 4) * 3 )) ;; # 4-7 flicker loops
     *)                 _robot_dur=$(( 8 + RANDOM % 18 )) ;;
   esac
 fi
@@ -95,6 +102,7 @@ case $_robot_state in
   moon)     color=75  ;;  # pale blue
   catpeek)  color=213 ;;  # pink
   basketball) color=214 ;;  # amber
+  campfire) color=203 ;;  # warm red
   slot)     color=226 ;;  # yellow (jackpot overrides below)
 esac
 case $_robot_state in
@@ -141,6 +149,12 @@ case $_robot_state in
   basketball)
     # 6-tick cycle: aim → release → arc → rim → swish → bounce+✨
     raw=${idle_frames[$(( 16 + _robot_t % 6 ))]}
+    ;;
+  campfire)
+    # 3-tick flicker: 🔥 flare → 💥 burst → ✨ embers (+ cozy blink).
+    # Mirrored variant puts the fire on the robot's left.
+    (( _robot_t == 0 )) && _robot_mirror=$(( RANDOM % 2 ))
+    raw=${idle_frames[$(( (_robot_mirror ? 25 : 22) + _robot_t % 3 ))]}
     ;;
   slot)
     # Reel symbols. 7️⃣ keycap is the jackpot — width matches the other 2-col
